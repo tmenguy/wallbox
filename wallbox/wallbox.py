@@ -38,7 +38,6 @@ class Wallbox:
         auth_path = "users/signin"
         auth = HTTPBasicAuth(self.username, self.password)
 
-        ask_for_refresh = False
         # if already has token:
         if self.jwtToken != "":
             # check if token is still valid
@@ -61,7 +60,7 @@ class Wallbox:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            raise(err)
+            raise (err)
 
         self.jwtToken = json.loads(response.text)["data"]["attributes"]["token"]
         self.jwtRefreshToken = json.loads(response.text)["data"]["attributes"]["refresh_token"]
