@@ -51,7 +51,6 @@ class Wallbox:
                 # try to refresh token
                 auth_path = "users/refresh-token"
                 auth = BearerAuth(self.jwtRefreshToken)
-                ask_for_refresh = True
 
         try:
             response = requests.get(
@@ -62,16 +61,7 @@ class Wallbox:
             )
             response.raise_for_status()
         except requests.exceptions.HTTPError as err:
-            if ask_for_refresh is False:
-                raise(err)
-            else:
-                #we need to redo a full "authentication" as the refresh token is probably no more valid or have an issue
-                #got this after running the integration for a while
-                #force token reset, and recall authentication
-                self.jwtToken = ""
-                self.jwtRefreshToken = ""
-                self.authenticate()
-                return
+            raise(err)
 
         self.jwtToken = json.loads(response.text)["data"]["attributes"]["token"]
         self.jwtRefreshToken = json.loads(response.text)["data"]["attributes"]["refresh_token"]
