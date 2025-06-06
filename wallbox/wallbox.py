@@ -24,6 +24,7 @@ class Wallbox:
         self.jwtRefreshToken = ""
         self.jwtTokenTtl = 0
         self.jwtRefreshTokenTtl = 0
+        self.jwtTokenRefreshRetries = 0
         self.headers = {
             "Accept": "application/json",
             "Content-Type": "application/json;charset=UTF-8",
@@ -37,6 +38,8 @@ class Wallbox:
     def authenticate(self):
         auth_path = "users/signin"
         auth = HTTPBasicAuth(self.username, self.password)
+
+        token_refresh_ask = False
         # if already has token:
         if self.jwtToken != "":
             # check if token is still valid
@@ -49,6 +52,7 @@ class Wallbox:
                 # try to refresh token
                 auth_path = "users/refresh-token"
                 auth = BearerAuth(self.jwtRefreshToken)
+                token_refresh_ask = True
 
         try:
             response = requests.get(
@@ -58,9 +62,23 @@ class Wallbox:
                 timeout=self._requestGetTimeout
             )
             response.raise_for_status()
+
         except requests.exceptions.HTTPError as err:
+            if token_refresh_ask:
+                if self.jwtTokenRefreshRetries > 3:
+                    # we got a refresh token HTTP error (not timeout nor anything else)
+                    # and we already tried to refresh the token 3 times
+                    self.jwtToken = ""
+                    self.jwtRefreshToken = ""
+                    self.jwtTokenTtl = 0
+                    self.jwtRefreshTokenTtl = 0
+                    self.jwtTokenRefreshRetries = 0
+                else:
+                    self.jwtTokenRefreshRetries += 1
+
             raise (err)
 
+        self.jwtTokenRefreshRetries = 0
         self.jwtToken = json.loads(response.text)["data"]["attributes"]["token"]
         self.jwtRefreshToken = json.loads(response.text)["data"]["attributes"]["refresh_token"]
         self.jwtTokenTtl = json.loads(response.text)["data"]["attributes"]["ttl"]
