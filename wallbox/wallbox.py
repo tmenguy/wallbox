@@ -37,7 +37,6 @@ class Wallbox:
     def authenticate(self):
         auth_path = "users/signin"
         auth = HTTPBasicAuth(self.username, self.password)
-
         # if already has token:
         if self.jwtToken != "":
             # check if token is still valid
